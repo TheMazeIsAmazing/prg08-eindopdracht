@@ -19,11 +19,11 @@ const options = {
             units: 32,
             activation: 'relu',
         },
-        // {
-        //     type: 'dense',
-        //     units: 32,
-        //     activation: 'relu',
-        // },
+        {
+            type: 'dense',
+            units: 32,
+            activation: 'relu',
+        },
         {
             type: 'dense',
             units: 32,
@@ -39,8 +39,8 @@ const options = {
 const nn = ml5.neuralNetwork(options)
 
 function loadData() {
-    // Papa.parse("./data/airlines_delay.csv", {
-    Papa.parse("./data/airlines_delay_2000.csv", {
+    Papa.parse("./data/airlines_delay.csv", {
+    // Papa.parse("./data/airlines_delay_2000.csv", {
         download: true,
         header: true,
         dynamicTyping: true,
@@ -72,48 +72,23 @@ function nnAddData(data) {
     testData = data.slice(Math.floor(data.length * 0.8) + 1)
 
     for (let flight of trainData) {
-        // let data = {
-        //     time: flight.Time,
-        //     lenght: flight.Length,
-        //     dayOfWeek: flight.DayOfWeek,
-        //     airportFrom: airportsFrom.indexOf(flight.AirportFrom),
-        //     airportTo: airportsTo.indexOf(flight.AirportTo),
-        //     airline: airlines.indexOf(flight.Airline)
-        // }
-        // let data = {
-        //     time: flight.Time,
-        //     lenght: flight.Length,
-        //     dayOfWeek: flight.DayOfWeek,
-        //     airportFrom: flight.AirportFrom,
-        //     airportTo: flight.AirportTo,
-        //     airline: flight.Airline)
-        // }
-        let data = [
-            flight.Time,
-            flight.Length,
-            flight.DayOfWeek,
-            airportsFrom.indexOf(flight.AirportFrom),
-            airportsTo.indexOf(flight.AirportTo),
-            airlines.indexOf(flight.Airline)
-        ]
-        let label
-
-        // if (parseInt(flight.Class) === 0) {
-        //     label = { class: "OnTime" }
-        // } else {
-        //     label = { class: "Delayed" }
-        // }        
-        
-        if (parseInt(flight.Class) === 0) {
-            label = ["OnTime"]
-        } else {
-            label = ["Delayed"]
+        let data = {
+            time: flight.Time,
+            lenght: flight.Length,
+            dayOfWeek: flight.DayOfWeek,
+            airportFrom: airportsFrom.indexOf(flight.AirportFrom),
+            airportTo: airportsTo.indexOf(flight.AirportTo),
+            airline: airlines.indexOf(flight.Airline)
         }
 
+        let label
 
-
-
-
+        if (parseInt(flight.Class) === 0) {
+            label = { class: "OnTime" }
+        } else {
+            label = { class: "Delayed" }
+        }        
+    
         nn.addData(data, label)
     }
 
@@ -124,56 +99,39 @@ function nnAddData(data) {
 }
 
 function startTraining() {
-    nn.train({ epochs: 10 }, () => finishedTraining())
+    nn.train({ epochs: 50 }, () => finishedTraining())
 }
 
 async function finishedTraining() {
     console.log("Finished training!")
 
+    document.getElementById('downloadButton').addEventListener('click', () => {
+        nn.save()
+    })
+
     for (const flight of testData) {
         testFlight(flight)
     }
-
-    document.getElementById('accuracy').innerHTML = `Accuracy: ${(predictGoodOnTime + predictGoodDelayed) / testData.length} - Got Right: ${(predictGoodOnTime + predictGoodDelayed)}; Out of total: ${testData.length}`
-
-    document.getElementById('top-predictdelay_left-actualdelay').innerHTML = predictGoodDelayed
-    document.getElementById('top-predictdelay_left-actualontime').innerHTML = predictWrongDelayed
-    document.getElementById('top-predictontime_left-actualdelay').innerHTML = predictWrongOnTime
-    document.getElementById('top-predictontime_left-actualontime').innerHTML = predictGoodOnTime
-
 }
 
 
 //bereken de accuracy met behulp van alle test data
 async function testFlight(flight) {
     // prediction
-    // let flightData = {
-    //     time: flight.Time,
-    //     lenght: flight.Length,
-    //     dayOfWeek: flight.DayOfWeek,
-    //     airportFrom: airportsFrom.indexOf(flight.AirportFrom),
-    //     airportTo: airportsTo.indexOf(flight.AirportTo),
-    //     airline: airlines.indexOf(flight.Airline)
-    // }
+    let flightData = {
+        time: flight.Time,
+        lenght: flight.Length,
+        dayOfWeek: flight.DayOfWeek,
+        airportFrom: airportsFrom.indexOf(flight.AirportFrom),
+        airportTo: airportsTo.indexOf(flight.AirportTo),
+        airline: airlines.indexOf(flight.Airline)
+    }
 
-    console.log(flight)
+    nn.classify(flightData, (error, result) => afterPredictionHandler(result, error, flightData))
+}
 
-    let flightData = [
-        flight.Time,
-        flight.Length,
-        flight.DayOfWeek,
-        airportsFrom.indexOf(flight.AirportFrom),
-        airportsTo.indexOf(flight.AirportTo),
-        airlines.indexOf(flight.Airline)
-    ]
-
-    nn.classify(flightData, (error, result) => () => {
-        console.log(error)
-        console.log(result)
-    
-        
-        console.log(result[0].label)
-    
+function afterPredictionHandler(result, error, flight) {
+    if (result !== undefined) {   
         // vergelijk de result met het echte label
         if (result[0].label == "OnTime") {
             if (flight.Class == 1) {
@@ -192,46 +150,17 @@ async function testFlight(flight) {
                 predictGoodDelayed++
             }
         }
+    } else if (error !== undefined) {
+        console.error(error)
     }
-    // afterPredictionHandler(error, result)
-    )
-}
 
-function afterPredictionHandler(error, result) {
-    console.log(error)
-    console.log(result)
+    document.getElementById('accuracy').innerHTML = `Accuracy: ${(predictGoodOnTime + predictGoodDelayed) / testData.length} - Got Right: ${(predictGoodOnTime + predictGoodDelayed)}; Out of total: ${testData.length}`
 
-    
-    console.log(result[0].label)
+    document.getElementById('top-predictdelay_left-actualdelay').innerHTML = predictGoodDelayed
+    document.getElementById('top-predictdelay_left-actualontime').innerHTML = predictWrongDelayed
+    document.getElementById('top-predictontime_left-actualdelay').innerHTML = predictWrongOnTime
+    document.getElementById('top-predictontime_left-actualontime').innerHTML = predictGoodOnTime
 
-    // vergelijk de result met het echte label
-    if (result[0].label == "OnTime") {
-        if (flight.Class == 1) {
-            //top-predictontime_left-actualdelay
-            predictWrongOnTime++
-        } else {
-            //top-predictontime_left-actualontime
-            predictGoodOnTime++
-        }
-    } else {
-        if (flight.Class == 0) {
-            //top-predictdelay_left-actualontime
-            predictWrongDelayed++
-        } else {
-            //top-predictdelay_left-actualdelay
-            predictGoodDelayed++
-        }
-    }
 }
 
 loadData()
-
-// function arrayToOneHot(arr, numClasses) {
-//     let tensorArray = [];
-//     for (let i = 0; i < arr.length; i++) {
-//       let oneHot = Array(numClasses).fill(0);
-//       oneHot[arr[i]] = 1;
-//       tensorArray.push(oneHot);
-//     }
-//     return tf.tensor2d(tensorArray, [arr.length, numClasses]);
-//   }
