@@ -712,7 +712,7 @@ async function makePrediction(e) {
         airline: airlines.indexOf(fieldAirline.value)
     }
 
-    nn.classify(flightData, (error, result) => afterPredictionHandler(result, error, flightData))
+    nn.classify(flightData, (error, result) => afterPredictionHandler(result, error))
 }
 function afterPredictionHandler(result, error) {
     if (result !== undefined) {   
