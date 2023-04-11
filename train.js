@@ -39,8 +39,8 @@ const options = {
 const nn = ml5.neuralNetwork(options)
 
 function loadData() {
-    Papa.parse("./data/airlines_delay.csv", {
-    // Papa.parse("./data/airlines_delay_2000.csv", {
+    // Papa.parse("./data/airlines_delay.csv", {
+    Papa.parse("./data/airlines_delay_2000.csv", {
         download: true,
         header: true,
         dynamicTyping: true,
